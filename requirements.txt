@@ -1,0 +1,10 @@
+flask
+flask-cors
+pypdf2
+langchain
+langchain-community
+langchain-groq
+langchain-text-splitters
+chromadb
+sentence-transformers
+gunicorn
