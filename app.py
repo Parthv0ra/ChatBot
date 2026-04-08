@@ -60,7 +60,7 @@ def chat():
         question = data.get('question', '')
         if not question:
             return jsonify({'error': 'No question provided'}), 400
-        if not is_ready:
+        if not chunks or not llm:
             return jsonify({'error': 'Chatbot is still initializing, please wait...'}), 503
         relevant = simple_search(question, k=3)
         context = "\n\n".join(relevant)
