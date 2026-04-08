@@ -16,7 +16,6 @@ chunks = []
 llm = None
 is_ready = False
 pdf_path = os.path.join(os.path.dirname(__file__), "document.pdf")
-
 log_path = os.path.join(os.path.dirname(__file__), "chat_logs.json")
 
 SCOPES = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -32,7 +31,6 @@ def get_sheet():
 
 def log_chat(question, answer):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # Save locally
     entry = {"timestamp": timestamp, "question": question, "answer": answer}
     logs = []
     if os.path.exists(log_path):
@@ -41,7 +39,6 @@ def log_chat(question, answer):
     logs.append(entry)
     with open(log_path, "w") as f:
         json.dump(logs, f, indent=2)
-    # Save to Google Sheet
     try:
         sheet = get_sheet()
         if sheet:
@@ -51,7 +48,7 @@ def log_chat(question, answer):
     except Exception as e:
         print(f"Google Sheets logging error: {e}")
 
-
+def simple_search(question, k=3):
     question_words = set(question.lower().split())
     scored = []
     for chunk in chunks:
