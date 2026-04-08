@@ -37,7 +37,7 @@ def initialize_chatbot():
         chunks = splitter.split_text(text)
 
         print("Connecting to Groq...")
-        llm = ChatGroq(api_key=os.getenv("GROQ_API_KEY"), model="llama3-8b-8192")
+        llm = ChatGroq(api_key=os.getenv("GROQ_API_KEY"), model="llama-3.3-70b-versatile")
 
         is_ready = True
         print("Chatbot ready!")
