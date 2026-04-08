@@ -8,3 +8,5 @@ langchain-text-splitters
 chromadb
 gunicorn
 groq
+gspread
+google-auth
