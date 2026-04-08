@@ -4,7 +4,6 @@ from PyPDF2 import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_groq import ChatGroq
 import os
-import threading
 
 app = Flask(__name__)
 CORS(app)
@@ -74,8 +73,8 @@ def chat():
 def status():
     return jsonify({'ready': is_ready})
 
-print("Starting chatbot initialization in background...")
-threading.Thread(target=initialize_chatbot, daemon=True).start()
+print("Starting chatbot initialization...")
+initialize_chatbot()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
