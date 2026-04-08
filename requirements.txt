@@ -8,3 +8,4 @@ langchain-text-splitters
 chromadb
 sentence-transformers
 gunicorn
+torch --index-url https://download.pytorch.org/whl/cpu

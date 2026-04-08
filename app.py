@@ -7,6 +7,8 @@ from langchain_community.vectorstores import Chroma
 from langchain_groq import ChatGroq
 import os
 
+import threading
+
 app = Flask(__name__)
 CORS(app)
 
@@ -63,9 +65,9 @@ def chat():
 def status():
     return jsonify({'ready': vectorstore is not None and llm is not None})
 
-# Initialize on startup (works with both gunicorn and direct run)
-print("Initializing chatbot...")
-initialize_chatbot()
+# Initialize in background so port binds immediately
+print("Starting chatbot initialization in background...")
+threading.Thread(target=initialize_chatbot, daemon=True).start()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
