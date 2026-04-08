@@ -2,38 +2,48 @@ from flask import Flask, request, jsonify, render_template, send_file
 from flask_cors import CORS
 from PyPDF2 import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
 from langchain_groq import ChatGroq
 import os
-
 import threading
 
 app = Flask(__name__)
 CORS(app)
 
-# Global variables
-vectorstore = None
+chunks = []
 llm = None
+is_ready = False
 pdf_path = os.path.join(os.path.dirname(__file__), "document.pdf")
 
+def simple_search(question, k=3):
+    question_words = set(question.lower().split())
+    scored = []
+    for chunk in chunks:
+        chunk_words = set(chunk.lower().split())
+        score = len(question_words & chunk_words)
+        scored.append((score, chunk))
+    scored.sort(reverse=True)
+    return [c for _, c in scored[:k]]
+
 def initialize_chatbot():
-    global vectorstore, llm
+    global chunks, llm, is_ready
     try:
+        print("Loading PDF...")
         reader = PdfReader(pdf_path)
         text = ""
         for page in reader.pages:
             text += page.extract_text()
-        
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-        chunks = text_splitter.split_text(text)
-        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-        vectorstore = Chroma.from_texts(chunks, embeddings)
+
+        print("Splitting text...")
+        splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        chunks = splitter.split_text(text)
+
+        print("Connecting to Groq...")
         llm = ChatGroq(api_key=os.getenv("GROQ_API_KEY"), model="llama3-8b-8192")
-        return True
+
+        is_ready = True
+        print("Chatbot ready!")
     except Exception as e:
         print(f"Error initializing: {e}")
-        return False
 
 @app.route('/')
 def index():
@@ -48,24 +58,22 @@ def chat():
     try:
         data = request.json
         question = data.get('question', '')
-        
         if not question:
             return jsonify({'error': 'No question provided'}), 400
-        
-        docs = vectorstore.similarity_search(question, k=3)
-        context = "\n\n".join([doc.page_content for doc in docs])
+        if not is_ready:
+            return jsonify({'error': 'Chatbot is still initializing, please wait...'}), 503
+        relevant = simple_search(question, k=3)
+        context = "\n\n".join(relevant)
         prompt = f"Based on the following context, answer the question.\n\nContext:\n{context}\n\nQuestion: {question}\n\nAnswer:"
         response = llm.invoke(prompt).content
-        
         return jsonify({'answer': response})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/status')
 def status():
-    return jsonify({'ready': vectorstore is not None and llm is not None})
+    return jsonify({'ready': is_ready})
 
-# Initialize in background so port binds immediately
 print("Starting chatbot initialization in background...")
 threading.Thread(target=initialize_chatbot, daemon=True).start()
 
